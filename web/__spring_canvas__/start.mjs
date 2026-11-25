@@ -5,8 +5,11 @@ const stableSubId = {
   name: "spring-stable-subid",
   enforce: "pre",
   transform(code, id) {
+    if (id.includes("shared/lib/relay-url")) {
+      return code.replace("window.location.host}`", "window.location.host}/relay`");
+    }
     if (id.includes("shared/lib/nostr-client")) {
-      return code.replace("Date.now().toString(36)", '"spring"');
+      return code.replace("Date.now().toString(36)", '"spring"').replace("const ws = new WebSocket(wsUrl);", "console.error('RELAYDBG', wsUrl); const ws = new WebSocket(wsUrl);");
     }
   },
 };
@@ -14,7 +17,7 @@ const stableSubId = {
 const port = parseInt(process.env.PORT || "5173", 10);
 const server = await createServer({
   plugins: [stableSubId],
-  server: { port, strictPort: true, host: "127.0.0.1" },
+  server: { port, strictPort: true },
 });
 await server.listen();
 server.printUrls();
