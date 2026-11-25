@@ -1,22 +1,21 @@
 import { createServer } from "vite";
 
-// Preview-only: give relay queries a stable subscription id so a scripted mock relay can answer them.
-const stableSubId = {
-  name: "spring-stable-subid",
+// Preview-only: the repositories page reads its data from a Nostr relay over WebSocket, which
+// the preview cannot serve to the browser. Default the page to the app's own built-in DEV
+// "preview=repositories" mode (its mock-repos data) when no preview query is given.
+const defaultPreview = {
+  name: "spring-default-repos-preview",
   enforce: "pre",
   transform(code, id) {
-    if (id.includes("shared/lib/relay-url")) {
-      return code.replace("window.location.host}`", "window.location.host}/relay`");
-    }
-    if (id.includes("shared/lib/nostr-client")) {
-      return code.replace("Date.now().toString(36)", '"spring"').replace("const ws = new WebSocket(wsUrl);", "console.error('RELAYDBG', wsUrl); const ws = new WebSocket(wsUrl);");
+    if (id.includes("features/repos/ui/ReposPage")) {
+      return code.replace('.get("preview")', '.get("preview") ?? "repositories"');
     }
   },
 };
 
 const port = parseInt(process.env.PORT || "5173", 10);
 const server = await createServer({
-  plugins: [stableSubId],
+  plugins: [defaultPreview],
   server: { port, strictPort: true },
 });
 await server.listen();
